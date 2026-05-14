@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhishingGuard — URL Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="page-home">
+    <div class="bg-mesh" aria-hidden="true"></div>
+
+    <header class="top-nav">
+        <a href="/" class="brand">
+            <span class="brand-mark"></span>
+            <span class="brand-text">PhishingGuard</span>
+        </a>
+        <span class="nav-tag">ML · Cybersecurity</span>
+    </header>
+
+    <main class="home-main">
+        <section class="hero">
+            <p class="eyebrow">Network security analytics</p>
+            <h1>Detect phishing sites from <span class="text-gradient">URL &amp; domain signals</span></h1>
+            <p class="lead">
+                This system scores uploaded CSV feature rows with a trained model: unusual URL length,
+                IP-style hosts, HTTPS tokens, DNS and traffic hints, and more—then labels each row
+                <strong>Legitimate</strong> or <strong>Phishing</strong> for batch review.
+            </p>
+        </section>
+
+        <section class="features" aria-label="Capabilities">
+            <article class="feature-card">
+                <div class="feature-icon" aria-hidden="true">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
+                </div>
+                <h2>URL &amp; domain features</h2>
+                <p>Encodes structural and reputation cues your dataset already captures.</p>
+            </article>
+            <article class="feature-card">
+                <div class="feature-icon" aria-hidden="true">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                </div>
+                <h2>ML classification</h2>
+                <p>Preprocessor + model pipeline for consistent batch predictions.</p>
+            </article>
+            <article class="feature-card">
+                <div class="feature-icon" aria-hidden="true">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" />
+                    </svg>
+                </div>
+                <h2>CSV in, report out</h2>
+                <p>Upload a sample file; get a dashboard summary and downloadable report.</p>
+            </article>
+        </section>
+
+        <p class="upload-hint">
+            Use the <strong>floating upload button</strong> to select your CSV, then submit the form.
+        </p>
+    </main>
+
+    <form id="upload-form" class="sr-only" action="/predict" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="file-input" accept=".csv,text/csv" required>
+    </form>
+
+    <div class="fab-wrap" role="group" aria-label="Upload CSV">
+        <button type="button" class="fab" id="fab-trigger" title="Upload CSV for analysis"
+            aria-label="Upload CSV for analysis">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+        </button>
+        <span class="fab-label" id="fab-filename" hidden></span>
+        <button type="submit" form="upload-form" class="fab-submit" id="fab-submit" hidden>Run analysis</button>
+    </div>
+
+    <script>
+        (function () {
+            var input = document.getElementById("file-input");
+            var fab = document.getElementById("fab-trigger");
+            var label = document.getElementById("fab-filename");
+            var submitBtn = document.getElementById("fab-submit");
+            fab.addEventListener("click", function () { input.click(); });
+            input.addEventListener("change", function () {
+                if (input.files && input.files.length) {
+                    label.textContent = input.files[0].name;
+                    label.hidden = false;
+                    submitBtn.hidden = false;
+                } else {
+                    label.hidden = true;
+                    submitBtn.hidden = true;
+                }
+            });
+        })();
+    </script>
+</body>
+
+</html>

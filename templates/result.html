@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis report — PhishingGuard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="page-results">
+    <div class="bg-mesh bg-mesh--subtle" aria-hidden="true"></div>
+
+    <header class="top-nav">
+        <a href="/" class="brand">
+            <span class="brand-mark"></span>
+            <span class="brand-text">PhishingGuard</span>
+        </a>
+        <a href="/" class="nav-link">New analysis</a>
+    </header>
+
+    <main class="results-main">
+        <section class="results-hero">
+            <p class="eyebrow">Prediction summary</p>
+            <h1>Analysis complete</h1>
+            <p class="results-meta">Report generated <time>{{ completed_at }}</time></p>
+        </section>
+
+        <section class="kpi-row" aria-label="Counts">
+            <article class="kpi-card">
+                <span class="kpi-label">Total rows</span>
+                <span class="kpi-value">{{ total_count }}</span>
+                <span class="kpi-hint">Scanned in this batch</span>
+            </article>
+            <article class="kpi-card kpi-card--safe">
+                <span class="kpi-label">Legitimate</span>
+                <span class="kpi-value">{{ safe_count }}</span>
+                <span class="kpi-hint">{{ safe_pct }}% of batch</span>
+            </article>
+            <article class="kpi-card kpi-card--risk">
+                <span class="kpi-label">Phishing</span>
+                <span class="kpi-value">{{ phishing_count }}</span>
+                <span class="kpi-hint">{{ phishing_pct }}% of batch</span>
+            </article>
+        </section>
+
+        <div class="dist-bar" role="img" aria-label="Safe versus phishing share">
+            <div class="dist-bar__safe" style="width: {{ safe_pct }}%"></div>
+            <div class="dist-bar__phish" style="width: {{ phishing_pct }}%"></div>
+        </div>
+        <div class="dist-legend">
+            <span><i class="dot dot--safe"></i> Safe {{ safe_pct }}%</span>
+            <span><i class="dot dot--phish"></i> Phishing {{ phishing_pct }}%</span>
+        </div>
+
+        <section class="panel">
+            <div class="panel-head">
+                <div>
+                    <h2 class="panel-title">Prediction table</h2>
+                    <p class="panel-sub">Feature values with model output (scroll horizontally if needed).</p>
+                </div>
+                <div class="panel-actions">
+                    <a href="/download-report" class="btn btn-primary" download>Download CSV report</a>
+                    <a href="/" class="btn btn-ghost">Upload another file</a>
+                </div>
+            </div>
+
+            {% if table_truncated %}
+            <p class="table-note">Showing first {{ table_shown }} of {{ total_count }} rows in the browser. The
+                downloaded CSV contains the full dataset.</p>
+            {% endif %}
+
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            {% for h in table_headers %}
+                            <th scope="col">{{ h }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in table_rows %}
+                        <tr>
+                            {% for cell in row %}
+                            <td>
+                                {% if table_headers[loop.index0] == 'Prediction' %}
+                                {% if cell == 'Safe' %}
+                                <span class="badge badge--safe">Legitimate</span>
+                                {% else %}
+                                <span class="badge badge--phish">Phishing</span>
+                                {% endif %}
+                                {% else %}
+                                {{ cell }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>
