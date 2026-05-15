@@ -11,6 +11,7 @@ permissions:
   id-token: write
   contents: read
 
+
 jobs:
   integration:
     name: Continuous Integration
@@ -25,10 +26,15 @@ jobs:
       - name: Run unit tests
         run: echo "Running unit tests"
 
+
   build-and-push-ecr-image:
     name: Continuous Delivery
     needs: integration
     runs-on: ubuntu-latest
+
+    outputs:
+      image_uri: ${{ steps.build-image.outputs.image }}
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -37,6 +43,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y jq unzip
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -55,20 +62,16 @@ jobs:
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
           IMAGE_TAG: latest
         run: |
-          # Build a docker container and
-          # push it to ECR so that it can
-          # be deployed to ECS.
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
+
   Continuous-Deployment:
     needs: build-and-push-ecr-image
     runs-on: self-hosted
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
 
+    steps:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -80,24 +83,28 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Pull latest images
+      - name: Set ECR Registry
+        run: echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
+
+      - name: Pull latest image
         run: |
-         docker pull ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+          docker pull $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
       - name: Stop and remove old container
         run: |
           docker stop networksecurity || true
           docker rm networksecurity || true
 
-      - name: Run Docker Image to serve users
+      - name: Run Docker Image
         run: |
-         docker run -d -p 8080:8080 --ipc="host" \
-          --name networksecurity \
-          -e AWS_ACCESS_KEY_ID='${{ secrets.AWS_ACCESS_KEY_ID }}' \
-          -e AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
-          -e AWS_REGION='${{ secrets.AWS_REGION }}' \
-          ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_NAME }}:latest
+          docker run -d -p 8080:8080 --ipc="host" \
+            --name networksecurity \
+            -e AWS_ACCESS_KEY_ID='${{ secrets.AWS_ACCESS_KEY_ID }}' \
+            -e AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
+            -e AWS_REGION='${{ secrets.AWS_REGION }}' \
+            -e MONGO_DB_URL='${{ secrets.MONGO_DB_URL }}' \
+            $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      - name: Clean previous images and containers
-        run:
-         docker system prune -f
+      - name: Clean up
+        run: |
+          docker system prune -f
