@@ -32,9 +32,6 @@ jobs:
     needs: integration
     runs-on: ubuntu-latest
 
-    outputs:
-      image_uri: ${{ steps.build-image.outputs.image }}
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
@@ -55,8 +52,7 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
+      - name: Build and Push Image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_NAME }}
@@ -64,10 +60,10 @@ jobs:
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
 
   Continuous-Deployment:
+    name: Deployment
     needs: build-and-push-ecr-image
     runs-on: self-hosted
 
@@ -83,20 +79,22 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Set ECR Registry
+      - name: Set Registry
         run: echo "ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}" >> $GITHUB_ENV
 
-      - name: Pull latest image
+      - name: Pull Image
         run: |
           docker pull $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      - name: Stop and remove old container
+      - name: Stop Old Container
         run: |
           docker stop networksecurity || true
           docker rm networksecurity || true
 
-      - name: Run Docker Image
+      - name: Run Container
         run: |
+          set -x
+
           docker run -d -p 8080:8080 --ipc="host" \
             --name networksecurity \
             -e AWS_ACCESS_KEY_ID='${{ secrets.AWS_ACCESS_KEY_ID }}' \
@@ -105,6 +103,12 @@ jobs:
             -e MONGO_DB_URL='${{ secrets.MONGO_DB_URL }}' \
             $ECR_REGISTRY/${{ secrets.ECR_REPOSITORY_NAME }}:latest
 
-      - name: Clean up
+          docker ps -a
+
+      - name: Debug Container Logs
         run: |
-          docker system prune -f
+          docker logs networksecurity || true
+
+      - name: Cleanup
+        run: |
+          docker system prune -a -f --volumes
